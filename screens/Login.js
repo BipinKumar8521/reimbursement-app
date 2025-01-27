@@ -115,7 +115,6 @@ const LoginScreen = () => {
 		</TouchableWithoutFeedback>
 	);
 };
-
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
@@ -145,12 +144,12 @@ const styles = StyleSheet.create({
 	headerText: {
 		fontSize: 28,
 		fontWeight: "bold",
-		color: "#333",
+		color: "#000000",
 		marginBottom: 10,
 	},
 	subHeaderText: {
 		fontSize: 16,
-		color: "#666",
+		color: "#000000",
 	},
 	inputContainer: {
 		marginBottom: 20,
@@ -158,16 +157,16 @@ const styles = StyleSheet.create({
 	inputWrapper: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#f5f5f5",
+		backgroundColor: "#e8f5e9",
 		borderRadius: 10,
 		marginBottom: 15,
 		paddingHorizontal: 15,
 		height: 50,
 		borderWidth: 1,
-		borderColor: "#e0e0e0",
+		borderColor: "#c8e6c9",
 	},
 	inputWrapperFocused: {
-		borderColor: "#4c669f",
+		borderColor: "#2e7d32",
 		backgroundColor: "#fff",
 	},
 	inputIcon: {
@@ -175,7 +174,7 @@ const styles = StyleSheet.create({
 	},
 	input: {
 		flex: 1,
-		color: "#333",
+		color: "#1d1d1d",
 		fontSize: 16,
 	},
 	visibilityIcon: {
@@ -186,11 +185,11 @@ const styles = StyleSheet.create({
 		marginBottom: 20,
 	},
 	forgotPasswordText: {
-		color: "#4c669f",
+		color: "#2e7d32",
 		fontSize: 14,
 	},
 	loginButton: {
-		backgroundColor: "#4c669f",
+		backgroundColor: "#2e7d32",
 		borderRadius: 10,
 		height: 50,
 		justifyContent: "center",
@@ -207,11 +206,11 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	signupText: {
-		color: "#666",
+		color: "#080808",
 		fontSize: 14,
 	},
 	signupLink: {
-		color: "#4c669f",
+		color: "#2e7d32",
 		fontSize: 14,
 		fontWeight: "bold",
 	},
