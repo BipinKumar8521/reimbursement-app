@@ -11,9 +11,9 @@ A React Native application for managing reimbursements and invoices. This app al
 
 ## Screenshots
 
-![Home Screen](./screenshots/home.png)
-![Submit Reimbursement](./screenshots/submit_reimbursement.png)
-![Expense Details](./screenshots/expense_details.png)
+![Home Screen](./assets/demo/Home.jpg)
+![Submit Reimbursement](./assets/demo/submit.jpg)
+![Expense Details](./assets//demo/expensedetails.jpg)
 
 ## Installation
 
