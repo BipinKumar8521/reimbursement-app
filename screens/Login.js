@@ -8,20 +8,24 @@ import {
 	TouchableWithoutFeedback,
 	Keyboard,
 	Dimensions,
+	Image,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const { width, height } = Dimensions.get("window");
 
-const LoginScreen = () => {
+const LoginScreen = ({ navigation, onLogin }) => {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 	const [focusedInput, setFocusedInput] = useState(null);
 
 	const handleLogin = () => {
-		// Implement login logic here
-		console.log("Login pressed with:", { email, password });
+		if (email === "test@example.com" && password === "password") {
+			onLogin();
+		} else {
+			alert("Invalid credentials");
+		}
 	};
 
 	const togglePasswordVisibility = () => {
@@ -30,7 +34,8 @@ const LoginScreen = () => {
 
 	return (
 		<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-			<View>
+			<View style={styles.container}>
+				<Image source={require("../assets/user.jpg")} style={styles.logo} />
 				<View style={styles.headerContainer}>
 					<Text style={styles.headerText}>Welcome Back</Text>
 					<Text style={styles.subHeaderText}>Sign in to continue</Text>
@@ -115,6 +120,7 @@ const LoginScreen = () => {
 		</TouchableWithoutFeedback>
 	);
 };
+
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
@@ -122,20 +128,12 @@ const styles = StyleSheet.create({
 		width: width,
 		justifyContent: "center",
 		alignItems: "center",
+		backgroundColor: "#f2f2f2",
 	},
-	loginContainer: {
-		width: width * 0.9,
-		backgroundColor: "white",
-		borderRadius: 20,
-		padding: 20,
-		shadowColor: "#000",
-		shadowOffset: {
-			width: 0,
-			height: 2,
-		},
-		shadowOpacity: 0.25,
-		shadowRadius: 3.84,
-		elevation: 5,
+	logo: {
+		width: 100,
+		height: 100,
+		marginBottom: 20,
 	},
 	headerContainer: {
 		alignItems: "center",
@@ -153,6 +151,7 @@ const styles = StyleSheet.create({
 	},
 	inputContainer: {
 		marginBottom: 20,
+		width: "90%",
 	},
 	inputWrapper: {
 		flexDirection: "row",
@@ -183,6 +182,7 @@ const styles = StyleSheet.create({
 	forgotPassword: {
 		alignItems: "flex-end",
 		marginBottom: 20,
+		width: "90%",
 	},
 	forgotPasswordText: {
 		color: "#2e7d32",
@@ -195,6 +195,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		alignItems: "center",
 		marginBottom: 20,
+		width: "90%",
 	},
 	loginButtonText: {
 		color: "white",

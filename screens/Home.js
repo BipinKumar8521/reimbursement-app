@@ -1,4 +1,3 @@
-// screens/HomeScreen.js
 import React, { useState, useEffect } from "react";
 import {
 	StyleSheet,
@@ -14,51 +13,24 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import ExpenseItem from "../components/ExpenseItem";
+import ProfileModal from "../components/ProfileModal";
+import ExpenseModal from "../components/ExpenseModal";
 
-const INITIAL_EXPENSES = [
-	{
-		id: "TR",
-		type: "Travel",
-		status: "Missing Fields",
-		amount: "12,333",
-		statusColor: "#FF9500",
-		date: new Date().toISOString(),
-	},
-	{
-		id: "FO",
-		type: "Food",
-		status: "Missing Receipts",
-		amount: "12,333",
-		statusColor: "#FF3B30",
-		date: new Date().toISOString(),
-	},
-	{
-		id: "OI",
-		type: "Office Item",
-		status: "Pending Your Approval",
-		amount: "12,333",
-		statusColor: "#FF9500",
-		date: new Date().toISOString(),
-	},
-	{
-		id: "PP",
-		type: "Petty Purchase",
-		status: "Missing Receipts",
-		amount: "12,333",
-		statusColor: "#FF3B30",
-		date: new Date().toISOString(),
-	},
-];
-
-const HomeScreen = ({ navigation }) => {
-	const [expenses, setExpenses] = useState(INITIAL_EXPENSES);
+const HomeScreen = ({ navigation, handleLogout }) => {
+	const [expenses, setExpenses] = useState([]);
 	const [activeTab, setActiveTab] = useState("My Invoices");
 	const [loading, setLoading] = useState(true);
 	const [showProfileModal, setShowProfileModal] = useState(false);
+	const [selectedExpense, setSelectedExpense] = useState(null);
+	const [showExpenseModal, setShowExpenseModal] = useState(false);
 
 	useEffect(() => {
-		loadExpenses();
-	}, []);
+		const unsubscribe = navigation.addListener("focus", () => {
+			loadExpenses();
+		});
+		return unsubscribe;
+	}, [navigation]);
 
 	const loadExpenses = async () => {
 		try {
@@ -74,63 +46,49 @@ const HomeScreen = ({ navigation }) => {
 	};
 
 	const handleExpensePress = (expense) => {
-		// Handle expense item press
-		console.log("Expense pressed:", expense);
+		setSelectedExpense(expense);
+		setShowExpenseModal(true);
 	};
 
-	const ExpenseItem = ({ id, type, status, amount, statusColor }) => (
-		<TouchableOpacity
-			style={styles.expenseItem}
-			onPress={() =>
-				handleExpensePress({ id, type, status, amount, statusColor })
-			}
-		>
+	const handleDeleteExpense = async (expenseId) => {
+		try {
+			const updatedExpenses = expenses.filter(
+				(expense) => expense.id !== expenseId
+			);
+			setExpenses(updatedExpenses);
+			await AsyncStorage.setItem("expenses", JSON.stringify(updatedExpenses));
+			setShowExpenseModal(false);
+		} catch (error) {
+			console.error("Error deleting expense:", error);
+		}
+	};
+
+	const ExpenseItem = ({ expense, onPress }) => (
+		<TouchableOpacity onPress={() => onPress(expense)} style={styles.expenseItem}>
 			<View style={styles.expenseLeft}>
-				<View style={styles.expenseIcon}>
-					<Text style={styles.expenseIconText}>{id}</Text>
-				</View>
+				{expense.attachments > 0 && expense.uri ? (
+					<Image source={{ uri: expense.uri }} style={styles.expenseImage} />
+				) : (
+					<View style={styles.expenseIcon}>
+						<Text style={styles.expenseIconText}>
+							{expense.type.slice(0, 2).toUpperCase()}
+						</Text>
+					</View>
+				)}
 				<View style={styles.expenseDetails}>
-					<Text style={styles.expenseType}>{type}</Text>
-					<Text style={[styles.expenseStatus, { color: statusColor }]}>
-						{status}
+					<Text style={styles.expenseType}>{expense.type}</Text>
+					<Text style={styles.expenseDescription} numberOfLines={1}>
+						{expense.description}
+					</Text>
+					<Text style={[styles.expenseStatus, { color: expense.statusColor }]}>
+						{expense.status}
 					</Text>
 				</View>
 			</View>
-			<Text style={styles.expenseAmount}>₹{amount}</Text>
-		</TouchableOpacity>
-	);
-
-	const ProfileModal = () => (
-		<Modal
-			visible={showProfileModal}
-			animationType="slide"
-			transparent={true}
-			onRequestClose={() => setShowProfileModal(false)}
-		>
-			<View style={styles.modalContainer}>
-				<View style={styles.modalContent}>
-					<Text style={styles.modalTitle}>Profile</Text>
-					<TouchableOpacity
-						style={styles.modalOption}
-						onPress={() => setShowProfileModal(false)}
-					>
-						<Text>Settings</Text>
-					</TouchableOpacity>
-					<TouchableOpacity
-						style={styles.modalOption}
-						onPress={() => setShowProfileModal(false)}
-					>
-						<Text style={{ color: "#FF3B30" }}>Logout</Text>
-					</TouchableOpacity>
-					<TouchableOpacity
-						style={styles.modalCloseButton}
-						onPress={() => setShowProfileModal(false)}
-					>
-						<Text>Close</Text>
-					</TouchableOpacity>
-				</View>
+			<View style={styles.expenseRight}>
+				<Text style={styles.expenseAmount}>₹{expense.amount}</Text>
 			</View>
-		</Modal>
+		</TouchableOpacity>
 	);
 
 	if (loading) {
@@ -140,6 +98,10 @@ const HomeScreen = ({ navigation }) => {
 			</View>
 		);
 	}
+
+	const filteredExpenses = expenses.filter((expense) =>
+		activeTab === "My Invoices" ? !expense.reimbursed : expense.reimbursed
+	);
 
 	return (
 		<SafeAreaView style={styles.container}>
@@ -208,9 +170,23 @@ const HomeScreen = ({ navigation }) => {
 
 			{/* Expense List */}
 			<ScrollView style={styles.expenseList}>
-				{expenses.map((expense) => (
-					<ExpenseItem key={expense.id} {...expense} />
-				))}
+				{loading ? (
+					<View style={styles.loadingContainer}>
+						<ActivityIndicator size="large" color="#34C759" />
+					</View>
+				) : filteredExpenses.length > 0 ? (
+					filteredExpenses.map((expense) => (
+						<ExpenseItem
+							key={expense.id}
+							expense={expense}
+							onPress={handleExpensePress}
+						/>
+					))
+				) : (
+					<View style={styles.noExpensesContainer}>
+						<Text style={styles.noExpensesText}>No expenses found</Text>
+					</View>
+				)}
 			</ScrollView>
 
 			{/* FAB */}
@@ -221,27 +197,17 @@ const HomeScreen = ({ navigation }) => {
 				<Text style={styles.fabText}>+</Text>
 			</TouchableOpacity>
 
-			{/* Bottom Navigation */}
-			<View style={styles.bottomNav}>
-				<TouchableOpacity style={styles.navItem}>
-					<MaterialCommunityIcons name="home" size={24} color="#34C759" />
-					<Text style={[styles.navText, styles.activeNavText]}>Home</Text>
-				</TouchableOpacity>
-				<TouchableOpacity style={styles.navItem}>
-					<MaterialCommunityIcons
-						name="file-document-outline"
-						size={24}
-						color="#8E8E93"
-					/>
-					<Text style={styles.navText}>My Invoices</Text>
-				</TouchableOpacity>
-				<TouchableOpacity style={styles.navItem}>
-					<MaterialCommunityIcons name="refresh" size={24} color="#8E8E93" />
-					<Text style={styles.navText}>Reimbursements</Text>
-				</TouchableOpacity>
-			</View>
-
-			<ProfileModal />
+			<ProfileModal
+				visible={showProfileModal}
+				onClose={() => setShowProfileModal(false)}
+				onLogout={handleLogout}
+			/>
+			<ExpenseModal
+				visible={showExpenseModal}
+				expense={selectedExpense}
+				onClose={() => setShowExpenseModal(false)}
+				onDelete={handleDeleteExpense}
+			/>
 		</SafeAreaView>
 	);
 };
@@ -322,46 +288,6 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#fff",
 	},
-	expenseItem: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		padding: 16,
-		borderBottomWidth: 1,
-		borderBottomColor: "#F2F2F7",
-	},
-	expenseLeft: {
-		flexDirection: "row",
-		alignItems: "center",
-	},
-	expenseIcon: {
-		width: 36,
-		height: 36,
-		borderRadius: 8,
-		backgroundColor: "#F2F2F7",
-		justifyContent: "center",
-		alignItems: "center",
-		marginRight: 12,
-	},
-	expenseIconText: {
-		fontSize: 12,
-		color: "#8E8E93",
-	},
-	expenseDetails: {
-		flex: 1,
-	},
-	expenseType: {
-		fontSize: 16,
-		fontWeight: "500",
-		marginBottom: 4,
-	},
-	expenseStatus: {
-		fontSize: 12,
-	},
-	expenseAmount: {
-		fontSize: 16,
-		fontWeight: "500",
-	},
 	fab: {
 		position: "absolute",
 		right: 16,
@@ -385,50 +311,66 @@ const styles = StyleSheet.create({
 		fontSize: 32,
 		color: "#000",
 	},
-	bottomNav: {
-		flexDirection: "row",
-		justifyContent: "space-around",
-		paddingVertical: 8,
-		backgroundColor: "#fff",
-		borderTopWidth: 1,
-		borderTopColor: "#F2F2F7",
-	},
-	navItem: {
-		alignItems: "center",
-	},
-	navText: {
-		fontSize: 12,
-		color: "#8E8E93",
-		marginTop: 4,
-	},
-	activeNavText: {
-		color: "#34C759",
-	},
-	modalContainer: {
+	noExpensesContainer: {
 		flex: 1,
-		justifyContent: "flex-end",
-		backgroundColor: "rgba(0, 0, 0, 0.5)",
+		justifyContent: "center",
+		alignItems: "center",
+		padding: 16,
 	},
-	modalContent: {
-		backgroundColor: "#fff",
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		padding: 20,
+	noExpensesText: {
+		fontSize: 16,
+		color: "#8E8E93",
 	},
-	modalTitle: {
-		fontSize: 20,
-		fontWeight: "600",
-		marginBottom: 20,
-	},
-	modalOption: {
-		paddingVertical: 15,
+	expenseItem: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		padding: 16,
 		borderBottomWidth: 1,
 		borderBottomColor: "#F2F2F7",
 	},
-	modalCloseButton: {
-		marginTop: 20,
+	expenseLeft: {
+		flexDirection: "row",
 		alignItems: "center",
-		padding: 15,
+	},
+	expenseIcon: {
+		width: 36,
+		height: 36,
+		borderRadius: 8,
+		backgroundColor: "#F2F2F7",
+		justifyContent: "center",
+		alignItems: "center",
+		marginRight: 12,
+	},
+	expenseIconText: {
+		fontSize: 16,
+		color: "#8E8E93",
+	},
+	expenseImage: {
+		width: 36,
+		height: 36,
+		borderRadius: 8,
+		marginRight: 12,
+	},
+	expenseDetails: {
+		flex: 1,
+	},
+	expenseType: {
+		fontSize: 16,
+		fontWeight: "500",
+		marginBottom: 4,
+	},
+	expenseDescription: {
+		fontSize: 14,
+		color: "#8E8E93",
+		marginBottom: 4,
+	},
+	expenseStatus: {
+		fontSize: 12,
+	},
+	expenseAmount: {
+		fontSize: 16,
+		fontWeight: "500",
 	},
 });
 

@@ -9,10 +9,13 @@ import {
 	StatusBar,
 	ScrollView,
 	Platform,
+	Image,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SubmitReimbursementScreen = ({ navigation }) => {
 	const [amount, setAmount] = useState("");
@@ -21,6 +24,7 @@ const SubmitReimbursementScreen = ({ navigation }) => {
 	const [invoiceNumber, setInvoiceNumber] = useState("");
 	const [showDatePicker, setShowDatePicker] = useState(false);
 	const [uploadedFile, setUploadedFile] = useState(null);
+	const [category, setCategory] = useState("");
 
 	const handlePickDocument = async () => {
 		try {
@@ -46,6 +50,23 @@ const SubmitReimbursementScreen = ({ navigation }) => {
 		}
 	};
 
+	const handleTakePhoto = async () => {
+		const { status } = await ImagePicker.requestCameraPermissionsAsync();
+		if (status !== "granted") {
+			alert("Camera permission is required to take a photo");
+			return;
+		}
+
+		const result = await ImagePicker.launchCameraAsync({
+			mediaTypes: ImagePicker.MediaTypeOptions.Images,
+			quality: 1,
+		});
+
+		if (!result.canceled) {
+			setUploadedFile(result.assets[0]);
+		}
+	};
+
 	const handleDateChange = (event, selectedDate) => {
 		setShowDatePicker(false);
 		if (selectedDate) {
@@ -53,20 +74,36 @@ const SubmitReimbursementScreen = ({ navigation }) => {
 		}
 	};
 
-	const handleSubmit = () => {
-		if (!amount || !transactionDate || !description) {
+	const handleSubmit = async () => {
+		if (!amount || !transactionDate || !description || !category) {
 			alert("Please fill in all required fields");
 			return;
 		}
 
-		// Handle submission logic here
-		console.log({
+		const newExpense = {
+			id: `EXP${Date.now() + Math.floor(Math.random() * 1000)}`,
+			type: category,
+			status: "Pending Your Approval",
 			amount,
-			transactionDate,
+			statusColor: "#FF9500",
+			date: transactionDate.toISOString(),
 			description,
-			invoiceNumber,
-			uploadedFile,
-		});
+			attachments: uploadedFile ? 1 : 0,
+			uri: uploadedFile ? uploadedFile.uri : null,
+			reimbursed: false,
+		};
+
+		try {
+			const storedExpenses = await AsyncStorage.getItem("expenses");
+			const expenses = storedExpenses ? JSON.parse(storedExpenses) : [];
+			expenses.push(newExpense);
+			await AsyncStorage.setItem("expenses", JSON.stringify(expenses));
+			alert("Expense submitted successfully");
+			navigation.goBack();
+		} catch (error) {
+			console.error("Error saving expense:", error);
+			alert("Failed to submit expense");
+		}
 	};
 
 	return (
@@ -87,20 +124,33 @@ const SubmitReimbursementScreen = ({ navigation }) => {
 
 			<ScrollView style={styles.content}>
 				{/* Upload Section */}
-				<TouchableOpacity
-					style={styles.uploadSection}
-					onPress={handlePickDocument}
-				>
-					<MaterialCommunityIcons name="upload" size={24} color="#4CAF50" />
-					<Text style={styles.uploadText}>
-						<Text style={styles.uploadGreen}>Click to upload</Text> or drag and
-						drop
-					</Text>
-					<Text style={styles.uploadSubtext}>PDF, PNG or JPG (Max. 5 MB)</Text>
+				<View style={styles.uploadSection}>
+					<TouchableOpacity
+						style={styles.uploadButton}
+						onPress={handlePickDocument}
+					>
+						<MaterialCommunityIcons name="upload" size={24} color="#4CAF50" />
+						<Text style={styles.uploadText}>Pick from device</Text>
+					</TouchableOpacity>
+					<TouchableOpacity
+						style={styles.uploadButton}
+						onPress={handleTakePhoto}
+					>
+						<MaterialCommunityIcons name="camera" size={24} color="#4CAF50" />
+						<Text style={styles.uploadText}>Take a photo</Text>
+					</TouchableOpacity>
 					{uploadedFile && (
-						<Text style={styles.fileName}>{uploadedFile.name}</Text>
+						<View style={styles.filePreview}>
+							{uploadedFile.uri && (
+								<Image
+									source={{ uri: uploadedFile.uri }}
+									style={styles.imagePreview}
+								/>
+							)}
+							<Text style={styles.fileName}>{uploadedFile.name}</Text>
+						</View>
 					)}
-				</TouchableOpacity>
+				</View>
 
 				{/* Invoice Details */}
 				<Text style={styles.sectionTitle}>Invoice Details</Text>
@@ -145,6 +195,16 @@ const SubmitReimbursementScreen = ({ navigation }) => {
 				<View style={styles.formGroup}>
 					<TextInput
 						style={styles.input}
+						placeholder="Category *"
+						value={category}
+						onChangeText={setCategory}
+						placeholderTextColor="#6B7280"
+					/>
+				</View>
+
+				<View style={styles.formGroup}>
+					<TextInput
+						style={styles.input}
 						placeholder="Invoice# Optional"
 						value={invoiceNumber}
 						onChangeText={setInvoiceNumber}
@@ -166,10 +226,10 @@ const SubmitReimbursementScreen = ({ navigation }) => {
 			<TouchableOpacity
 				style={[
 					styles.submitButton,
-					(!amount || !description) && styles.submitButtonDisabled,
+					(!amount || !description || !category) && styles.submitButtonDisabled,
 				]}
 				onPress={handleSubmit}
-				disabled={!amount || !description}
+				disabled={!amount || !description || !category}
 			>
 				<Text style={styles.submitButtonText}>Submit Request</Text>
 			</TouchableOpacity>
@@ -218,18 +278,15 @@ const styles = StyleSheet.create({
 		backgroundColor: "#F9FAFB",
 		marginBottom: 24,
 	},
+	uploadButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginBottom: 16,
+	},
 	uploadText: {
 		fontSize: 14,
-		color: "#6B7280",
-		marginTop: 8,
-	},
-	uploadGreen: {
 		color: "#4CAF50",
-	},
-	uploadSubtext: {
-		fontSize: 12,
-		color: "#9CA3AF",
-		marginTop: 4,
+		marginLeft: 8,
 	},
 	fileName: {
 		fontSize: 12,
@@ -274,6 +331,16 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		fontSize: 14,
 		fontWeight: "500",
+	},
+	filePreview: {
+		alignItems: "center",
+		marginTop: 16,
+	},
+	imagePreview: {
+		width: 100,
+		height: 100,
+		borderRadius: 8,
+		marginBottom: 8,
 	},
 });
 
