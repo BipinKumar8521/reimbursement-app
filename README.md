@@ -11,9 +11,9 @@ A React Native application for managing reimbursements and invoices. This app al
 
 ## Screenshots
 
-![Home Screen](./assets/demo/Home.jpg)
-![Submit Reimbursement](./assets/demo/submit.jpg)
-![Expense Details](./assets//demo/expensedetails.jpg)
+<img src="./assets/demo/Home.jpg" alt="Home Screen" width="200"/>
+<img src="./assets/demo/submit.jpg" alt="Submit Reimbursement" width="200"/>
+<img src="./assets/demo/expensedetails.jpg" alt="Expense Details" width="200"/>
 
 ## Installation
 
@@ -65,8 +65,4 @@ This project is licensed under the MIT License. See the [LICENSE](./LICENSE) fil
 
 ## Contact
 
-If you have any questions or need further assistance, feel free to contact me at [your-email@example.com](mailto:your-email@example.com).
-
-```
-
-```
+If you have any questions or need further assistance, feel free to contact me at [bk3284488@gmail.com](mailto:bk3284488@gmail.com).
